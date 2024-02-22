@@ -1,7 +1,7 @@
 import conllu
 import torch
 
-from ANN import trainANN
+from ANN import trainANN, testANN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -49,9 +49,10 @@ trainX, trainY = oneHotEncode(trainSet, vocab, pos)
 devX, devY = oneHotEncode(devSet, vocab, pos)
 testX, testY = oneHotEncode(testSet, vocab, pos)
 
-context = 2
+context = 3
 
 pad = [0] * len(vocab)
 pad[list(vocab).index('<PAD>')] = 1
-model = trainANN(trainX, trainY, pad, context, device)
+model = trainANN(trainX, trainY, devX, devY, pad, context, device)
+testANN(model, testX, testY, pad, context, device)
 
