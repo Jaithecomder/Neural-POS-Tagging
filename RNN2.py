@@ -10,7 +10,8 @@ class RNN(nn.Module):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
         self.numLayers = numLayers
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True, num_layers=numLayers, nonlinearity=activation)
+        self.fc0 = nn.Linear(input_size, 256)
+        self.rnn = nn.RNN(256, hidden_size, batch_first=True, num_layers=numLayers, nonlinearity=activation)
         self.fc = nn.Linear(hidden_size, output_size)
 
     def forward(self, input, hidden):
@@ -35,7 +36,7 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
     devX = pad_sequence(devX, batch_first=True)
     devY = pad_sequence(devY, batch_first=True)
 
-    trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=32, shuffle=True)
+    trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=1, shuffle=True)
 
     hSize = 128
     numLayers = 1
@@ -45,7 +46,7 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    for epoch in range(20):
+    for epoch in range(10):
         losses = []
         for i, data in enumerate(trainDL, 0):
             inputs, labels = data
@@ -56,6 +57,14 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
+        # for i in range(len(trainX)):
+        #     hidden = model.initHidden(1)
+        #     optimizer.zero_grad()
+        #     output, hidden = model(trainX[i].unsqueeze(0), hidden)
+        #     loss = criterion(output, trainY[i].unsqueeze(0))
+        #     loss.backward()
+        #     optimizer.step()
+        #     losses.append(loss.item())
         print('----------------------------------')
         print('Epoch:', epoch, 'Loss:', sum(losses) / len(losses))
         with torch.no_grad():
@@ -63,6 +72,15 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
             output, hidden = model(devX, hidden)
             loss = criterion(output, devY)
             print('Dev Loss:', loss.item())
+            # correct = 0
+            # total = 0
+            # for i in range(len(devX)):
+            #     hidden = model.initHidden(1)
+            #     output, hidden = model(devX[i].unsqueeze(0), hidden)
+            #     if output.argmax() == devY[i].argmax():
+            #         correct += 1
+            #     total += 1
+            # print('Dev Accuracy:', correct / total)
     return model
 
 def testRNN(model, testX, testY, device='cpu'):
@@ -80,6 +98,15 @@ def testRNN(model, testX, testY, device='cpu'):
                 if output[i][j].argmax() == testY[i][j].argmax():
                     correct += 1
                 total += 1
+        
+        # correct = 0
+        # total = 0
+        # for i in range(len(testX)):
+        #     hidden = model.initHidden(1)
+        #     output, hidden = model(testX[i].unsqueeze(0), hidden)
+        #     if output.argmax() == testY[i].argmax():
+        #         correct += 1
+        #     total += 1
 
         print('Test Accuracy:', correct / total)
         

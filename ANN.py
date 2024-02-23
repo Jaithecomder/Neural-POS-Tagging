@@ -81,4 +81,4 @@ def testANN(model, testX, testY, pad, contextSize=2, device='cpu'):
         for i in range(len(output)):
             if torch.argmax(output[i]) == torch.argmax(testY[i]):
                 correct += 1
-        print('Accuracy:', correct / len(output))
+        print('Test Accuracy:', correct / len(output))
