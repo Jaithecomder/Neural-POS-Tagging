@@ -1,8 +1,13 @@
 import conllu
 import torch
+import sys
 
 from ANN import trainANN, testANN
-from RNN import trainRNN, testRNN
+from RNN2 import trainRNN, testRNN
+
+model = '-f'
+if len(sys.argv) > 1:
+    model = sys.argv[1]
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -50,13 +55,14 @@ trainX, trainY = oneHotEncode(trainSet, vocab, pos)
 devX, devY = oneHotEncode(devSet, vocab, pos)
 testX, testY = oneHotEncode(testSet, vocab, pos)
 
-# context = 3
+if model == '-f':
+    context = 2
+    pad = [0] * len(vocab)
+    pad[list(vocab).index('<PAD>')] = 1
+    model = trainANN(trainX, trainY, devX, devY, pad, contextSize=context, device=device)
+    acc = testANN(model, testX, testY, pad, context, device)
+    print(f'Accuracy: {acc}')
 
-# pad = [0] * len(vocab)
-# pad[list(vocab).index('<PAD>')] = 1
-# model = trainANN(trainX, trainY, devX, devY, pad, context, device)
-# testANN(model, testX, testY, pad, context, device)
-
-model = trainRNN(trainX, trainY, devX, devY, device)
-testRNN(model, testX, testY, device)
-
+elif model == '-r':
+    model = trainRNN(trainX, trainY, devX, devY, device)
+    testRNN(model, testX, testY, device)

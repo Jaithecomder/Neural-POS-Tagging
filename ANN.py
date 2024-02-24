@@ -1,20 +1,32 @@
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import torch
 
 class ANN(nn.Module):
-    def __init__(self, input_size, output_size, hidden_size):
+    def __init__(self, inputSize, outputSize, hiddenSizes, activation='relu'):
         super(ANN, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fn = nn.ReLU()
+        if activation == 'relu':
+            self.fn = nn.ReLU()
+        elif activation == 'tanh':
+            self.fn = nn.Tanh()
+        elif activation == 'sigmoid':
+            self.fn = nn.Sigmoid()
+        self.fc1 = nn.Linear(inputSize, hiddenSizes[0])
+        self.hfcs = []
+        for i in range(1, len(hiddenSizes) - 1):
+            self.hfcs.append(nn.Linear(hiddenSizes[i - 1], hiddenSizes[i]))
+        self.fc2 = nn.Linear(hiddenSizes[-1], outputSize)
 
     def forward(self, x):
         x = self.fc1(x)
-        x = F.relu(x)
+        x = self.fn(x)
+        for hfc in self.hfcs:
+            x = hfc(x)
+            x = self.fn(x)
         x = self.fc2(x)
-        return F.softmax(x, dim=1)
+        return torch.softmax(x, dim=1)
     
 def dataPrep(trainX, trainY, contextSize, pad):
     X = []
@@ -33,7 +45,7 @@ def dataPrep(trainX, trainY, contextSize, pad):
             Y.append(trainY[s][i])
     return X, Y
     
-def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, device='cpu'):
+def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, lr=0.001, hiddenSizes=(256,), activation='sigmoid', batchSize=32, epochs=20, device='cpu'):
     trainX, trainY = dataPrep(trainX, trainY, contextSize, pad)
     devX, devY = dataPrep(devX, devY, contextSize, pad)
 
@@ -44,14 +56,14 @@ def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, device='cpu'):
     devX = torch.flatten(devX, start_dim=1).to(device)
     devY = torch.tensor(devY, dtype=torch.float).to(device)
 
-    trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=32, shuffle=True)
+    trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=batchSize, shuffle=True)
 
-    model = ANN(len(trainX[0]), len(trainY[0]), 200).to(device)
+    model = ANN(len(trainX[0]), len(trainY[0]), hiddenSizes, activation).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    for epoch in range(20):
+    for epoch in range(epochs):
         losses = []
         for i, data in enumerate(trainDL, 0):
             inputs, labels = data
@@ -81,4 +93,4 @@ def testANN(model, testX, testY, pad, contextSize=2, device='cpu'):
         for i in range(len(output)):
             if torch.argmax(output[i]) == torch.argmax(testY[i]):
                 correct += 1
-        print('Test Accuracy:', correct / len(output))
+    return correct / len(output)
