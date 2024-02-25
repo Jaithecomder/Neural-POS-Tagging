@@ -111,13 +111,13 @@ for item in best3:
                     total += 1
             print('Dev Accuracy:', correct / total) 
             devAcc.append(correct / total)
-    torch.save(model, f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.pt')
+    torch.save(model, f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.pt')
     plt.figure()
     plt.plot(devAcc)
     plt.title(f'Batch Size: {batchSize}, Hidden Size: {hSize}, Num Layers: {numLayers}, Direction: {direction}, Learning Rate: {lr}')
     plt.xlabel('Epochs')
     plt.ylabel('Dev Accuracy')
-    plt.savefig(f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.png')
+    plt.savefig(f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.png')
 
     with torch.no_grad():
         outputs = torch.tensor([]).to(device)
@@ -139,9 +139,9 @@ for item in best3:
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plt.title(f'Batch Size: {batchSize}, Hidden Size: {hSize}, Num Layers: {numLayers}, Direction: {direction}, Learning Rate: {lr}')
-        plt.savefig(f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}_Dev_CMat.png')
+        plt.savefig(f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}_Dev_CMat.png')
         
-        with open(f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.txt', 'w') as f:
+        with open(f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.txt', 'w') as f:
             f.write(f'Dev Accuracy: {accuracy_score(flatDevY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1))}\n')
             f.write(f'Dev Precision: {precision_score(flatDevY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1), average="macro", labels=range(17), zero_division=0)}\n')
             f.write(f'Dev Recall: {recall_score(flatDevY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1), average="macro", labels=range(17), zero_division=0)}\n')
@@ -167,9 +167,9 @@ for item in best3:
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plt.title(f'Batch Size: {batchSize}, Hidden Size: {hSize}, Num Layers: {numLayers}, Direction: {direction}, Learning Rate: {lr}')
-        plt.savefig(f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}_Test_CMat.png')
+        plt.savefig(f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}_Test_CMat.png')
 
-        with open(f'./saves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.txt', 'a') as f:
+        with open(f'./RNNsaves/RNNTuning_{batchSize}_{hSize}_{numLayers}_{direction}_{lr}.txt', 'a') as f:
             f.write(f'Test Accuracy: {accuracy_score(flatTestY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1))}\n')
             f.write(f'Test Precision: {precision_score(flatTestY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1), average="macro", labels=range(17), zero_division=0)}\n')
             f.write(f'Test Recall: {recall_score(flatTestY.cpu().numpy().argmax(axis=1), outputs.cpu().numpy().argmax(axis=1), average="macro", labels=range(17), zero_division=0)}\n')

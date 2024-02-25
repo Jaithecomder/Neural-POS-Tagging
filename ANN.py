@@ -4,8 +4,9 @@ from torch.utils.data import DataLoader
 import torch
 
 class ANN(nn.Module):
-    def __init__(self, inputSize, outputSize, hiddenSizes, activation='relu', device='cpu'):
+    def __init__(self, inputSize, outputSize, hiddenSizes, activation='relu', device='cpu', contextSize=2):
         super(ANN, self).__init__()
+        self.contextSize = contextSize
         self.fn = nn.ReLU()
         if activation == 'relu':
             self.fn = nn.ReLU()
@@ -35,7 +36,6 @@ def dataPrep(trainX, trainY, contextSize, pad, device='cpu'):
         sentence = trainX[s]
         for i in range(len(sentence)):
             x = []
-            y = []
             for j in range(i - contextSize, i + contextSize + 1):
                 if j < 0 or j >= len(sentence):
                     x.append(pad)
@@ -54,7 +54,7 @@ def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, lr=0.001, hiddenSi
 
     trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=batchSize, shuffle=True)
 
-    model = ANN(len(trainX[0]), len(trainY[0]), hiddenSizes, activation, device).to(device)
+    model = ANN(len(trainX[0]), len(trainY[0]), hiddenSizes, activation, device, contextSize).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
