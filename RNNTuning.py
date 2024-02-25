@@ -56,7 +56,7 @@ for batchSize in [32, 64, 128]:
         for numLayers in [1, 2, 3]:
             for direction in [1, 2]:
                 for epochs in range(10, 31, 10):
-                    for lrp in range(1, 4):
+                    for lrp in range(2, 5):
                         with open('RNNTuning.pkl', 'rb') as f:
                             dict = pickle.load(f)
                         lr = 10 ** -lrp
@@ -64,7 +64,7 @@ for batchSize in [32, 64, 128]:
                                          hSize=hSize, numLayers=numLayers, direction=direction,
                                          epochs=epochs, lr=lr, device=device)
                         acc = testRNN(model, devX, devY, device=device)
-                        dict[(batchSize, hSize, numLayers, direction, epochs, lrp)] = acc
+                        dict[(batchSize, hSize, numLayers, direction, epochs, lr)] = acc
                         print(f'Batch Size: {batchSize}, Hidden Size: {hSize}, Num Layers: {numLayers}, Direction: {direction}, Epochs: {epochs}, Learning Rate: {lr}')
                         print(f'Accuracy: {acc}')
                         print('----------------------------------')
