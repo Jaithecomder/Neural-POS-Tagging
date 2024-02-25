@@ -2,7 +2,7 @@ import conllu
 import torch
 import pickle
 
-from ANN import trainANN, testANN
+from RNN import trainRNN, testRNN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -46,35 +46,27 @@ def oneHotEncode(sentenceSet, vocab, pos):
 trainX, trainY = oneHotEncode(trainSet, vocab, pos)
 devX, devY = oneHotEncode(devSet, vocab, pos)
 
-hiddenSizes = [(64,),
-               (128,),
-               (256,),
-               (64, 128),
-               (128, 256)]
-
 dict = {}
 
-with open('ANNtuning.pkl', 'wb') as f:
+with open('RNNTuning.pkl', 'wb') as f:
     pickle.dump(dict, f)
 
-for contextSize in range(0, 5):
-    for hiddenSize in hiddenSizes:
-        for activation in ['sigmoid', 'tanh', 'relu']:
-            for batchSize in [32, 64, 128]:
+for batchSize in [32, 64, 128]:
+    for hSize in [64, 128, 256]:
+        for numLayers in [1, 2, 3]:
+            for direction in [1, 2]:
                 for epochs in range(10, 31, 10):
                     for lrp in range(1, 4):
-                        with open('ANNtuning.pkl', 'rb') as f:
+                        with open('RNNTuning.pkl', 'rb') as f:
                             dict = pickle.load(f)
                         lr = 10 ** -lrp
-                        pad = [0] * len(vocab)
-                        pad[list(vocab).index('<PAD>')] = 1
-                        model = trainANN(trainX, trainY, devX, devY, pad, contextSize=contextSize,
-                                         lr=lr, hiddenSizes=hiddenSize, activation=activation,
-                                         batchSize=batchSize, epochs=epochs, device=device)
-                        acc = testANN(model, devX, devY, pad, contextSize=contextSize, device=device)
-                        dict[(contextSize, hiddenSize, activation, batchSize, epochs, lr)] = acc
-                        print(f'Context Size: {contextSize}, Hidden Size: {hiddenSize}, Activation: {activation}, Batch Size: {batchSize}, Epochs: {epochs}, Learning Rate: {lr}')
+                        model = trainRNN(trainX, trainY, devX, devY, batchSize=batchSize,
+                                         hSize=hSize, numLayers=numLayers, direction=direction,
+                                         epochs=epochs, lr=lr, device=device)
+                        acc = testRNN(model, devX, devY, device=device)
+                        dict[(batchSize, hSize, numLayers, direction, epochs, lrp)] = acc
+                        print(f'Batch Size: {batchSize}, Hidden Size: {hSize}, Num Layers: {numLayers}, Direction: {direction}, Epochs: {epochs}, Learning Rate: {lr}')
                         print(f'Accuracy: {acc}')
                         print('----------------------------------')
-                        with open('ANNtuning.pkl', 'wb') as f:
+                        with open('RNNTuning.pkl', 'wb') as f:
                             pickle.dump(dict, f)

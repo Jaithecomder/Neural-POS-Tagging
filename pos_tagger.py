@@ -64,5 +64,6 @@ if model == '-f':
     print(f'Accuracy: {acc}')
 
 elif model == '-r':
-    model = trainRNN(trainX, trainY, devX, devY, device)
-    testRNN(model, testX, testY, device)
+    model = trainRNN(trainX, trainY, devX, devY, device=device)
+    acc = testRNN(model, testX, testY, device)
+    print(f'Accuracy: {acc}')

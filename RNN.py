@@ -15,7 +15,6 @@ class RNN(nn.Module):
         self.fc1 = nn.Linear(direction * hiddenSize, outputSize)
 
     def forward(self, input):
-        # hidden = torch.zeros(self.numLayers * self.direction, input.size(0), self.hiddenSize).to(self.device)
         output, hidden = self.rnn(input)
         output = self.fc1(output)
         output = torch.softmax(output, dim=1)
@@ -28,25 +27,22 @@ def collate_fn(batch, device='cpu'):
     target = pad_sequence(target, batch_first=True).to(device)
     return [data, target]
 
-def trainRNN(trainX, trainY, devX, devY, device='cpu'):
+def trainRNN(trainX, trainY, devX, devY, batchSize=32, hSize=128, numLayers=2, direction=2, epochs=20, lr=1e-3, device='cpu'):
+    newTrainX = []
+    newTrainY = []
+    newDevX = []
+    newDevY = []
     for i in range(len(trainX)):
-        trainX[i] = torch.tensor(trainX[i], dtype=torch.float).to(device)
-        trainY[i] = torch.tensor(trainY[i], dtype=torch.float).to(device)
+        newTrainX.append(torch.tensor(trainX[i], dtype=torch.float).to(device))
+        newTrainY.append(torch.tensor(trainY[i], dtype=torch.float).to(device))
     for i in range(len(devX)):
-        devX[i] = torch.tensor(devX[i], dtype=torch.float).to(device)
-        devY[i] = torch.tensor(devY[i], dtype=torch.float).to(device)
+        newDevX.append(torch.tensor(devX[i], dtype=torch.float).to(device))
+        newDevY.append(torch.tensor(devY[i], dtype=torch.float).to(device))
 
-    batchSize = 32
-    trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=batchSize, shuffle=True, collate_fn=lambda x: collate_fn(x, device))
+    trainDL = DataLoader(list(zip(newTrainX, newTrainY)), batch_size=batchSize, shuffle=True, collate_fn=lambda x: collate_fn(x, device))
 
-    hSize = 128
-    numLayers = 2
-    direction = 2
+    model = RNN(len(newTrainX[0][0]), len(newTrainY[0][0]), hSize, numLayers, direction, device=device).to(device)
 
-    model = RNN(len(trainX[0][0]), len(trainY[0][0]), hSize, numLayers, direction, device=device).to(device)
-
-    epochs = 20
-    lr = 1e-3
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -64,10 +60,10 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
         with torch.no_grad():
             correct = 0
             total = 0
-            for i in range(len(devX)):
-                output = model(devX[i])
+            for i in range(len(newDevX)):
+                output = model(newDevX[i])
                 for j in range(len(devY[i])):
-                    if output[j].argmax() == devY[i][j].argmax():
+                    if output[j].argmax() == newDevY[i][j].argmax():
                         correct += 1
                     total += 1
             print('Dev Accuracy:', correct / total)
@@ -75,17 +71,19 @@ def trainRNN(trainX, trainY, devX, devY, device='cpu'):
 
 
 def testRNN(model, testX, testY, device='cpu'):
+    newTestX = []
+    newTestY = []
     for i in range(len(testX)):
-        testX[i] = torch.tensor(testX[i], dtype=torch.float).to(device)
-        testY[i] = torch.tensor(testY[i], dtype=torch.float).to(device)
+        newTestX.append(torch.tensor(testX[i], dtype=torch.float).to(device))
+        newTestY.append(torch.tensor(testY[i], dtype=torch.float).to(device))
 
     with torch.no_grad():
         correct = 0
         total = 0
-        for i in range(len(testX)):
-            output = model(testX[i])
+        for i in range(len(newTestX)):
+            output = model(newTestX[i])
             for j in range(len(testY[i])):
-                if output[j].argmax() == testY[i][j].argmax():
+                if output[j].argmax() == newTestY[i][j].argmax():
                     correct += 1
                 total += 1
-        print('Test Accuracy:', correct / total)
+    return correct / total
