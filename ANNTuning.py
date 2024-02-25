@@ -1,8 +1,11 @@
 import conllu
-import torch
 import pickle
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+import torch
 
-from ANN import trainANN, testANN
+from ANN import dataPrep, ANN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -57,24 +60,51 @@ dict = {}
 with open('ANNtuning.pkl', 'wb') as f:
     pickle.dump(dict, f)
 
+pad = [0] * len(vocab)
+pad[list(vocab).index('<PAD>')] = 1
+
 for contextSize in range(0, 5):
+    newTrainX, newTrainY = dataPrep(trainX, trainY, contextSize, pad, device)
+    newDevX, newDevY = dataPrep(devX, devY, contextSize, pad, device)
     for hiddenSize in hiddenSizes:
         for activation in ['sigmoid', 'tanh', 'relu']:
             for batchSize in [32, 64, 128]:
-                for epochs in range(10, 31, 10):
-                    for lrp in range(1, 4):
-                        with open('ANNtuning.pkl', 'rb') as f:
-                            dict = pickle.load(f)
-                        lr = 10 ** -lrp
-                        pad = [0] * len(vocab)
-                        pad[list(vocab).index('<PAD>')] = 1
-                        model = trainANN(trainX, trainY, devX, devY, pad, contextSize=contextSize,
-                                         lr=lr, hiddenSizes=hiddenSize, activation=activation,
-                                         batchSize=batchSize, epochs=epochs, device=device)
-                        acc = testANN(model, devX, devY, pad, contextSize=contextSize, device=device)
-                        dict[(contextSize, hiddenSize, activation, batchSize, epochs, lr)] = acc
-                        print(f'Context Size: {contextSize}, Hidden Size: {hiddenSize}, Activation: {activation}, Batch Size: {batchSize}, Epochs: {epochs}, Learning Rate: {lr}')
-                        print(f'Accuracy: {acc}')
+                for lrp in range(1, 4):
+                    lr = 10 ** -lrp
+
+                    trainDL = DataLoader(list(zip(newTrainX, newTrainY)), batch_size=batchSize, shuffle=True)
+
+                    model = ANN(len(newTrainX[0]), len(newTrainY[0]), hiddenSize, activation, device).to(device)
+
+                    criterion = nn.CrossEntropyLoss()
+                    optimizer = optim.Adam(model.parameters(), lr=lr)
+
+                    for epoch in range(30):
+                        losses = []
+                        for i, data in enumerate(trainDL, 0):
+                            inputs, labels = data
+                            optimizer.zero_grad()
+                            output = model(inputs)
+                            loss = criterion(output, labels.argmax(dim=1))
+                            loss.backward()
+                            optimizer.step()
+                            losses.append(loss.item())
                         print('----------------------------------')
-                        with open('ANNtuning.pkl', 'wb') as f:
-                            pickle.dump(dict, f)
+                        print('Epoch:', epoch, 'Loss:', sum(losses) / len(losses))
+                        with torch.no_grad():
+                            output = model(newDevX)
+                            correct = 0
+                            for i in range(len(output)):
+                                if torch.argmax(output[i]) == torch.argmax(newDevY[i]):
+                                    correct += 1
+                            print('Dev Accuracy:', correct / len(output))
+                        if (epoch + 1) % 10 == 0:
+                            with open('ANNtuning.pkl', 'rb') as f:
+                                dict = pickle.load(f)
+                            acc = correct / len(output)
+                            dict[(contextSize, hiddenSize, activation, batchSize, epoch + 1, lr)] = acc
+                            print(f'Context Size: {contextSize}, Hidden Size: {hiddenSize}, Activation: {activation}, Batch Size: {batchSize}, Epochs: {epoch + 1}, Learning Rate: {lr}')
+                            print(f'Accuracy: {acc}')
+                            print('----------------------------------')
+                            with open('ANNtuning.pkl', 'wb') as f:
+                                pickle.dump(dict, f)

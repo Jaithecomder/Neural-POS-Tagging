@@ -5,7 +5,7 @@ import sys
 from ANN import trainANN, testANN
 from RNN import trainRNN, testRNN
 
-model = '-r'
+model = '-f'
 if len(sys.argv) > 1:
     model = sys.argv[1]
 

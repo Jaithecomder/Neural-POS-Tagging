@@ -28,7 +28,7 @@ class ANN(nn.Module):
         x = self.fc2(x)
         return torch.softmax(x, dim=1)
     
-def dataPrep(trainX, trainY, contextSize, pad):
+def dataPrep(trainX, trainY, contextSize, pad, device='cpu'):
     X = []
     Y = []
     for s in range(len(trainX)):
@@ -43,18 +43,14 @@ def dataPrep(trainX, trainY, contextSize, pad):
                     x.append(sentence[j])
             X.append(x)
             Y.append(trainY[s][i])
+    X = torch.tensor(X, dtype=torch.float)
+    X = torch.flatten(X, start_dim=1).to(device)
+    Y = torch.tensor(Y, dtype=torch.float).to(device)
     return X, Y
     
 def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, lr=0.001, hiddenSizes=(256,), activation='sigmoid', batchSize=32, epochs=20, device='cpu'):
-    trainX, trainY = dataPrep(trainX, trainY, contextSize, pad)
-    devX, devY = dataPrep(devX, devY, contextSize, pad)
-
-    trainX = torch.tensor(trainX, dtype=torch.float)
-    trainX = torch.flatten(trainX, start_dim=1).to(device)
-    trainY = torch.tensor(trainY, dtype=torch.float).to(device)
-    devX = torch.tensor(devX, dtype=torch.float)
-    devX = torch.flatten(devX, start_dim=1).to(device)
-    devY = torch.tensor(devY, dtype=torch.float).to(device)
+    trainX, trainY = dataPrep(trainX, trainY, contextSize, pad, device)
+    devX, devY = dataPrep(devX, devY, contextSize, pad, device)
 
     trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=batchSize, shuffle=True)
 
@@ -77,8 +73,11 @@ def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, lr=0.001, hiddenSi
         print('Epoch:', epoch, 'Loss:', sum(losses) / len(losses))
         with torch.no_grad():
             output = model(devX)
-            loss = criterion(output, devY.argmax(dim=1))
-            print('Dev Loss:', loss.item())
+            correct = 0
+            for i in range(len(output)):
+                if torch.argmax(output[i]) == torch.argmax(devY[i]):
+                    correct += 1
+            print('Dev Accuracy:', correct / len(output))
     return model
 
 def testANN(model, testX, testY, pad, contextSize=2, device='cpu'):
