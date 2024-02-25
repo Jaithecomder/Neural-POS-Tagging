@@ -51,21 +51,18 @@ hiddenSizes = [(64,),
                (256,),
                (512,),
                (64, 128),
-               (128, 256),
                (256, 512),
-               (64, 256),
                (128, 512),
                (64, 128, 256),
-               (128, 256, 512),
-               (64, 128, 256, 512)]
+               (128, 256, 512)]
 
 dict = {}
 for contextSize in range(0, 5):
     for hiddenSize in hiddenSizes:
         for activation in ['sigmoid', 'tanh', 'relu']:
             for batchSize in [32, 64, 128]:
-                for epochs in range(10, 41, 10):
-                    for lrp in range(1, 5):
+                for epochs in range(10, 31, 10):
+                    for lrp in range(1, 4):
                         lr = 10 ** -lrp
                         pad = [0] * len(vocab)
                         pad[list(vocab).index('<PAD>')] = 1

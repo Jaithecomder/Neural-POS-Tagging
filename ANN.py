@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 import torch
 
 class ANN(nn.Module):
-    def __init__(self, inputSize, outputSize, hiddenSizes, activation='relu'):
+    def __init__(self, inputSize, outputSize, hiddenSizes, activation='relu', device='cpu'):
         super(ANN, self).__init__()
         self.fn = nn.ReLU()
         if activation == 'relu':
@@ -15,8 +15,8 @@ class ANN(nn.Module):
             self.fn = nn.Sigmoid()
         self.fc1 = nn.Linear(inputSize, hiddenSizes[0])
         self.hfcs = []
-        for i in range(1, len(hiddenSizes) - 1):
-            self.hfcs.append(nn.Linear(hiddenSizes[i - 1], hiddenSizes[i]))
+        for i in range(1, len(hiddenSizes)):
+            self.hfcs.append(nn.Linear(hiddenSizes[i - 1], hiddenSizes[i]).to(device))
         self.fc2 = nn.Linear(hiddenSizes[-1], outputSize)
 
     def forward(self, x):
@@ -58,7 +58,7 @@ def trainANN(trainX , trainY, devX, devY, pad, contextSize=2, lr=0.001, hiddenSi
 
     trainDL = DataLoader(list(zip(trainX, trainY)), batch_size=batchSize, shuffle=True)
 
-    model = ANN(len(trainX[0]), len(trainY[0]), hiddenSizes, activation).to(device)
+    model = ANN(len(trainX[0]), len(trainY[0]), hiddenSizes, activation, device).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)

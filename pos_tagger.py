@@ -3,9 +3,9 @@ import torch
 import sys
 
 from ANN import trainANN, testANN
-from RNN2 import trainRNN, testRNN
+from RNN import trainRNN, testRNN
 
-model = '-f'
+model = '-r'
 if len(sys.argv) > 1:
     model = sys.argv[1]
 
